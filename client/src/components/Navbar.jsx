@@ -22,11 +22,10 @@ const Navbar = () => {
                         </div>
                         <div className="flex flex-col">
                             <span className="text-2xl font-black tracking-tighter leading-none">
-                                <span className="text-brand-saffron">BHARAT</span>
-                                <span className="text-brand-navy mx-1">RAIL</span>
+                                <span className="text-brand-saffron">APLI</span>
+                                <span className="text-brand-navy mx-1">-</span>
                                 <span className="text-brand-green">MUMBAI</span>
                             </span>
-                            <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Republic Day Edition</span>
                         </div>
                     </Link>
                     <div className="hidden md:flex items-center space-x-4">
