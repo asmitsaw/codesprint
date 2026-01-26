@@ -1,7 +1,9 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
-import AuthPage from './pages/AuthPage';
+import SignInPage from './pages/SignInPage';
+import SignUpPage from './pages/SignUpPage';
+import Dashboard from './pages/Dashboard';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ScanPage from './pages/ScanPage';
@@ -9,23 +11,30 @@ import LiveMap from './pages/LiveMap';
 import Ticketing from './pages/Ticketing';
 import DigitalTicket from './pages/DigitalTicket';
 import LiveStatus from './pages/LiveStatus';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<AuthPage />} />
-        <Route path="/signup" element={<AuthPage />} />
-        <Route path="/dashboard" element={<UserDashboard />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/scan" element={<ScanPage />} />
-        <Route path="/map" element={<LiveMap />} />
-        <Route path="/ticketing" element={<Ticketing />} />
-        <Route path="/digital-ticket" element={<DigitalTicket />} />
-        <Route path="/live-status" element={<LiveStatus />} />
-      </Routes>
-    </Router>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/sign-in" element={<SignInPage />} />
+      <Route path="/sign-up" element={<SignUpPage />} />
+
+      {/* Keep old login route for backwards compatibility */}
+      <Route path="/login" element={<SignInPage />} />
+      <Route path="/signup" element={<SignUpPage />} />
+
+      {/* Protected Routes - Require Authentication */}
+      <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/user-dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/scan" element={<ProtectedRoute><ScanPage /></ProtectedRoute>} />
+      <Route path="/map" element={<ProtectedRoute><LiveMap /></ProtectedRoute>} />
+      <Route path="/ticketing" element={<ProtectedRoute><Ticketing /></ProtectedRoute>} />
+      <Route path="/digital-ticket" element={<ProtectedRoute><DigitalTicket /></ProtectedRoute>} />
+      <Route path="/live-status" element={<ProtectedRoute><LiveStatus /></ProtectedRoute>} />
+    </Routes>
   );
 }
 

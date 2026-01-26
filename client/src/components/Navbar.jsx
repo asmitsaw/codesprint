@@ -1,9 +1,11 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Train } from 'lucide-react';
+import { useAuth, UserButton, SignedIn, SignedOut } from '@clerk/clerk-react';
 
 const Navbar = () => {
     const location = useLocation();
+    const { isSignedIn } = useAuth();
 
     const isActive = (path) => {
         return location.pathname === path ? 'text-brand-saffron bg-brand-navy/5 rounded-lg px-3 py-1' : 'text-gray-700 hover:text-brand-navy hover:bg-gray-50 rounded-lg px-3 py-1';
@@ -28,15 +30,41 @@ const Navbar = () => {
                         </div>
                     </Link>
                     <div className="hidden md:flex items-center space-x-4">
-                        <Link to="/map" className={`font-bold transition-all ${isActive('/map')}`}>Live Map</Link>
-                        <Link to="/ticketing" className={`font-bold transition-all ${isActive('/ticketing')}`}>Ticketing</Link>
-                        <Link to="/live-status" className={`font-bold transition-all ${isActive('/live-status')}`}>Live Status</Link>
-                        <Link to="/login" className="ml-4 px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-saffron via-brand-white to-brand-green text-brand-navy font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all relative overflow-hidden group">
-                            <span className="absolute inset-0 bg-brand-navy opacity-0 group-hover:opacity-10 transition-opacity"></span>
-                            <span className="relative text-shadow-sm flex items-center">
-                                Login
-                            </span>
-                        </Link>
+                        {isSignedIn && (
+                            <>
+                                <Link to="/dashboard" className={`font-bold transition-all ${isActive('/dashboard')}`}>Dashboard</Link>
+                                <Link to="/map" className={`font-bold transition-all ${isActive('/map')}`}>Live Map</Link>
+                                <Link to="/ticketing" className={`font-bold transition-all ${isActive('/ticketing')}`}>Ticketing</Link>
+                                <Link to="/live-status" className={`font-bold transition-all ${isActive('/live-status')}`}>Live Status</Link>
+                            </>
+                        )}
+
+                        {/* Show Sign In button when signed out */}
+                        <SignedOut>
+                            <Link to="/sign-in" className="ml-4 px-6 py-2.5 rounded-full bg-gradient-to-r from-brand-saffron via-brand-white to-brand-green text-brand-navy font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all relative overflow-hidden group">
+                                <span className="absolute inset-0 bg-brand-navy opacity-0 group-hover:opacity-10 transition-opacity"></span>
+                                <span className="relative text-shadow-sm flex items-center">
+                                    Sign In
+                                </span>
+                            </Link>
+                        </SignedOut>
+
+                        {/* Show User Profile when signed in */}
+                        <SignedIn>
+                            <div className="ml-4 flex items-center gap-3">
+                                <UserButton
+                                    appearance={{
+                                        elements: {
+                                            avatarBox: "w-10 h-10 border-2 border-brand-navy hover:border-brand-saffron transition-colors",
+                                            userButtonPopoverCard: "shadow-2xl",
+                                            userButtonPopoverActionButton: "hover:bg-brand-navy/10",
+                                            userButtonPopoverActionButton__signOut: "hover:bg-red-50 text-red-600"
+                                        }
+                                    }}
+                                    afterSignOutUrl="/"
+                                />
+                            </div>
+                        </SignedIn>
                     </div>
                 </div>
             </div>
