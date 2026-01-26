@@ -5,13 +5,39 @@ import { Link } from 'react-router-dom';
 const ScanPage = () => {
     const [scanned, setScanned] = useState(false);
     const [valid, setValid] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [suggestion, setSuggestion] = useState(null);
+    const [selectedTransport, setSelectedTransport] = useState(1); // Default to ID 1 for test
 
-    const handleScan = () => {
-        // Simulate processing
-        setTimeout(() => {
-            setScanned(true);
-            setValid(true);
-        }, 1500);
+    const handleScan = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('http://localhost:5000/api/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    transport_id: selectedTransport,
+                    event_type: 'IN', // Scanning IN
+                    user_id: 'user_123'
+                })
+            });
+            const data = await res.json();
+            
+            if (res.ok) {
+                setScanned(true);
+                setValid(true);
+                if (data.suggestion) {
+                    setSuggestion(data.suggestion);
+                }
+            } else {
+                alert('Scan Failed');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Error connecting to server');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -22,6 +48,22 @@ const ScanPage = () => {
             {!scanned ? (
                 <>
                     <h1 className="text-brand-navy text-2xl font-extrabold mb-8 z-10 tracking-tight">Scan Ticket QR</h1>
+                    
+                    {/* Simulated Transport Selection for Demo */}
+                    <div className="z-10 mb-4 bg-white/80 p-2 rounded-lg">
+                        <label className="text-xs font-bold text-gray-500 block">Select Train (Simulated NFC/QR data)</label>
+                        <select 
+                            className="bg-transparent font-bold text-brand-navy outline-none"
+                            value={selectedTransport}
+                            onChange={(e) => setSelectedTransport(e.target.value)}
+                        >
+                            <option value="1">Train #1 (Fast Local)</option>
+                            <option value="2">Train #2 (Slow Local)</option>
+                            <option value="3">Train #3 (AC Local)</option>
+                            <option value="4">Train #4 (Metro 3)</option>
+                        </select>
+                    </div>
+
                     <div className="relative w-72 h-72 border-4 border-white/50 rounded-3xl overflow-hidden shadow-2xl z-10 bg-black/80 backdrop-blur-sm">
                         <div className="absolute inset-0 bg-transparent z-20">
                             {/* Scanning Line Animation */}
@@ -46,9 +88,10 @@ const ScanPage = () => {
 
                     <button
                         onClick={handleScan}
+                        disabled={loading}
                         className="mt-12 px-8 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-white font-semibold hover:bg-white/20 transition-all z-10"
                     >
-                        Simulate Scan
+                        {loading ? 'Verifying...' : 'Simulate Scan'}
                     </button>
                 </>
             ) : (
@@ -60,6 +103,23 @@ const ScanPage = () => {
                             </div>
                             <h2 className="text-2xl font-bold text-gray-800 mb-2">Ticket Valid!</h2>
                             <p className="text-gray-500 text-center mb-6">Gates are opening. Have a safe journey.</p>
+                            
+                            {/* Smart Suggestion Alert */}
+                            {suggestion && (
+                                <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 w-full text-left rounded-r">
+                                    <div className="flex">
+                                        <div className="ml-3">
+                                            <p className="text-sm text-yellow-700">
+                                                <span className="font-bold block text-yellow-800 mb-1">⚠️ High Crowd Alert</span>
+                                                {suggestion.message}
+                                                <br/>
+                                                <span className="text-xs italic mt-1 block">{suggestion.reason}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="bg-gray-50 rounded-xl p-4 w-full mb-6 text-center border border-gray-100">
                                 <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Passenger</p>
                                 <p className="font-bold text-gray-800">John Doe (1 Adult)</p>
@@ -76,7 +136,7 @@ const ScanPage = () => {
                     )}
 
                     <button
-                        onClick={() => setScanned(false)}
+                        onClick={() => { setScanned(false); setSuggestion(null); }}
                         className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition-all"
                     >
                         Scan Another
