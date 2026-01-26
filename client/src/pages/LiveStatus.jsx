@@ -3,14 +3,42 @@ import Navbar from '../components/Navbar';
 import { Search, Clock, AlertTriangle, Train, ArrowRight } from 'lucide-react';
 
 const LiveStatus = () => {
-    const [searchQuery, setSearchQuery] = useState('');
+    const [trains, setTrains] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    const trains = [
-        { id: '90210', name: 'Churchgate Fast', eta: '2 min', status: 'On Time', platform: '2', crowd: 'High' },
-        { id: '90455', name: 'Virar Slow', eta: '8 min', status: 'Delayed (5m)', platform: '4', crowd: 'Medium' },
-        { id: '90882', name: 'Borivali Fast', eta: '12 min', status: 'On Time', platform: '1', crowd: 'Low' },
-        { id: '91234', name: 'Andheri Local', eta: '18 min', status: 'On Time', platform: '3', crowd: 'High' },
-    ];
+    React.useEffect(() => {
+        const fetchTrains = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/trains');
+                if (!res.ok) throw new Error('Failed to fetch');
+                const data = await res.json();
+                
+                // Enhance data with mock ETA/Platform as DB doesn't have it yet
+                const enhancedData = data.map(t => ({
+                    ...t,
+                    eta: Math.floor(Math.random() * 15) + 1 + ' min',
+                    platform: Math.floor(Math.random() * 4) + 1,
+                    crowd: t.status // Backend returns 'Low', 'Medium', 'High'
+                }));
+                setTrains(enhancedData);
+            } catch (err) {
+                console.error(err);
+                // Fallback to empty or error state
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTrains();
+        // Poll every 5 seconds for real-time updates
+        const interval = setInterval(fetchTrains, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    const filteredTrains = trains.filter(t => 
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        String(t.id).includes(searchQuery)
+    );
 
     return (
         <div className="min-h-screen flex flex-col font-sans">
@@ -44,45 +72,52 @@ const LiveStatus = () => {
 
                 {/* Status List */}
                 <div className="grid gap-6">
-                    {trains.map((train, i) => (
-                        <div key={i} className="glass-card p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
-                            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                                <div className="flex items-center space-x-4 w-full md:w-auto">
-                                    <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-brand-navy group-hover:bg-brand-navy group-hover:text-white transition-colors">
-                                        <Train className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-bold text-gray-900">{train.name}</h3>
-                                        <p className="text-sm text-gray-500 font-medium">#{train.id} • Platform {train.platform}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center space-x-8 w-full md:w-auto justify-between md:justify-end">
-                                    <div className="text-center">
-                                        <p className="text-xs text-gray-400 uppercase font-bold mb-1">Crowd</p>
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${train.crowd === 'High' ? 'bg-red-100 text-red-800' :
-                                                train.crowd === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                                            }`}>
-                                            {train.crowd}
-                                        </span>
-                                    </div>
-
-                                    <div className="text-center">
-                                        <p className="text-xs text-gray-400 uppercase font-bold mb-1">Status</p>
-                                        <div className={`flex items-center font-bold ${train.status.includes('Delayed') ? 'text-red-500' : 'text-green-600'}`}>
-                                            {train.status.includes('Delayed') && <AlertTriangle className="w-4 h-4 mr-1" />}
-                                            {train.status}
+                    {loading ? (
+                        <div className="text-center py-10">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-navy mx-auto"></div>
+                            <p className="mt-4 text-gray-500">Loading live status...</p>
+                        </div>
+                    ) : (
+                        filteredTrains.map((train, i) => (
+                            <div key={i} className="glass-card p-6 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group">
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                                    <div className="flex items-center space-x-4 w-full md:w-auto">
+                                        <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-brand-navy group-hover:bg-brand-navy group-hover:text-white transition-colors">
+                                            <Train className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-bold text-gray-900">{train.name}</h3>
+                                            <p className="text-sm text-gray-500 font-medium">#{train.id} • Platform {train.platform} • {train.type}</p>
                                         </div>
                                     </div>
 
-                                    <div className="text-right pl-4 border-l border-gray-100">
-                                        <div className="text-xs text-gray-400 uppercase font-bold mb-1">Arriving In</div>
-                                        <div className="text-2xl font-black text-brand-navy">{train.eta}</div>
+                                    <div className="flex items-center space-x-8 w-full md:w-auto justify-between md:justify-end">
+                                        <div className="text-center">
+                                            <p className="text-xs text-gray-400 uppercase font-bold mb-1">Crowd</p>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                train.crowd === 'High' ? 'bg-red-100 text-red-800' :
+                                                train.crowd === 'Medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                                            }`}>
+                                                {train.crowd} ({train.current_occupancy || 0})
+                                            </span>
+                                        </div>
+
+                                        <div className="text-center">
+                                            <p className="text-xs text-gray-400 uppercase font-bold mb-1">Status</p>
+                                            <div className="flex items-center font-bold text-green-600">
+                                                On Time
+                                            </div>
+                                        </div>
+
+                                        <div className="text-right pl-4 border-l border-gray-100">
+                                            <div className="text-xs text-gray-400 uppercase font-bold mb-1">Arriving In</div>
+                                            <div className="text-2xl font-black text-brand-navy">{train.eta}</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
         </div>
