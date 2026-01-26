@@ -7,6 +7,99 @@ import { Train, MapPin, Ticket, TrendingUp, Clock, Users, AlertCircle, Calendar,
 const Dashboard = () => {
     const { user } = useUser();
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [userLocation, setUserLocation] = useState(null);
+    const [nearestStations, setNearestStations] = useState([]);
+    const [loadingLocation, setLoadingLocation] = useState(true);
+
+    // Sample stations database with coordinates (replace with actual data)
+    const stationsDatabase = [
+        // Mumbai Local Railway Stations
+        { id: 1, name: 'Churchgate', type: 'Railway', lat: 18.9322, lng: 72.8264, line: 'Western Line' },
+        { id: 2, name: 'Marine Lines', type: 'Railway', lat: 18.9447, lng: 72.8236, line: 'Western Line' },
+        { id: 3, name: 'Charni Road', type: 'Railway', lat: 18.9515, lng: 72.8202, line: 'Western Line' },
+        { id: 4, name: 'Grant Road', type: 'Railway', lat: 18.9631, lng: 72.8153, line: 'Western Line' },
+        { id: 5, name: 'Mumbai Central', type: 'Railway', lat: 18.9685, lng: 72.8199, line: 'Western Line' },
+        { id: 6, name: 'Mahalaxmi', type: 'Railway', lat: 18.9826, lng: 72.8235, line: 'Western Line' },
+        { id: 7, name: 'Lower Parel', type: 'Railway', lat: 18.9965, lng: 72.8308, line: 'Western Line' },
+        { id: 8, name: 'Prabhadevi', type: 'Railway', lat: 19.0144, lng: 72.8290, line: 'Western Line' },
+        { id: 9, name: 'Dadar', type: 'Railway', lat: 19.0176, lng: 72.8432, line: 'Western/Central Line' },
+        { id: 10, name: 'Bandra', type: 'Railway', lat: 19.0544, lng: 72.8410, line: 'Western Line' },
+        { id: 11, name: 'Khar Road', type: 'Railway', lat: 19.0697, lng: 72.8374, line: 'Western Line' },
+        { id: 12, name: 'Santacruz', type: 'Railway', lat: 19.0811, lng: 72.8409, line: 'Western Line' },
+        { id: 13, name: 'Vile Parle', type: 'Railway', lat: 19.0970, lng: 72.8439, line: 'Western Line' },
+        { id: 14, name: 'Andheri', type: 'Railway', lat: 19.1197, lng: 72.8464, line: 'Western Line' },
+        { id: 15, name: 'Jogeshwari', type: 'Railway', lat: 19.1352, lng: 72.8495, line: 'Western Line' },
+        { id: 16, name: 'CSMT', type: 'Railway', lat: 18.9398, lng: 72.8355, line: 'Central Line' },
+        { id: 17, name: 'Masjid', type: 'Railway', lat: 18.9472, lng: 72.8310, line: 'Central Line' },
+        { id: 18, name: 'Sandhurst Road', type: 'Railway', lat: 18.9543, lng: 72.8408, line: 'Central Line' },
+        { id: 19, name: 'Byculla', type: 'Railway', lat: 18.9794, lng: 72.8322, line: 'Central Line' },
+        { id: 20, name: 'Chinchpokli', type: 'Railway', lat: 18.9905, lng: 72.8344, line: 'Central Line' },
+        { id: 21, name: 'Currey Road', type: 'Railway', lat: 18.9962, lng: 72.8385, line: 'Central Line' },
+        { id: 22, name: 'Parel', type: 'Railway', lat: 19.0081, lng: 72.8397, line: 'Central Line' },
+        { id: 23, name: 'Kurla', type: 'Railway', lat: 19.0653, lng: 72.8789, line: 'Central Line' },
+        { id: 24, name: 'Sion', type: 'Railway', lat: 19.0432, lng: 72.8622, line: 'Central Line' },
+        { id: 25, name: 'Wadala', type: 'Railway', lat: 19.0166, lng: 72.8577, line: 'Harbour Line' },
+
+        // Mumbai Metro Stations
+        { id: 26, name: 'Versova Metro', type: 'Metro', lat: 19.1301, lng: 72.8129, line: 'Metro Line 1' },
+        { id: 27, name: 'DN Nagar Metro', type: 'Metro', lat: 19.1297, lng: 72.8266, line: 'Metro Line 1' },
+        { id: 28, name: 'Azad Nagar Metro', type: 'Metro', lat: 19.1269, lng: 72.8358, line: 'Metro Line 1' },
+        { id: 29, name: 'Andheri Metro', type: 'Metro', lat: 19.1196, lng: 72.8478, line: 'Metro Line 1' },
+        { id: 30, name: 'Western Express Highway Metro', type: 'Metro', lat: 19.1094, lng: 72.8660, line: 'Metro Line 1' },
+        { id: 31, name: 'Ghatkopar Metro', type: 'Metro', lat: 19.0863, lng: 72.9081, line: 'Metro Line 1' },
+        { id: 32, name: 'Asalpha Metro', type: 'Metro', lat: 19.0944, lng: 72.9004, line: 'Metro Line 1' },
+        { id: 33, name: 'Jagruti Nagar Metro', type: 'Metro', lat: 19.1034, lng: 72.8914, line: 'Metro Line 1' },
+        { id: 34, name: 'Marol Naka Metro', type: 'Metro', lat: 19.1100, lng: 72.8807, line: 'Metro Line 1' },
+        { id: 35, name: 'Chakala Metro', type: 'Metro', lat: 19.1112, lng: 72.8732, line: 'Metro Line 1' },
+    ];
+
+    // Calculate distance between two coordinates using Haversine formula
+    const calculateDistance = (lat1, lon1, lat2, lon2) => {
+        const R = 6371; // Earth's radius in kilometers
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    // Get user's location and find nearest stations
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setUserLocation({ lat: latitude, lng: longitude });
+
+                    // Calculate distances to all stations
+                    const stationsWithDistance = stationsDatabase.map(station => ({
+                        ...station,
+                        distance: calculateDistance(latitude, longitude, station.lat, station.lng)
+                    }));
+
+                    // Sort by distance and get top 3
+                    const nearest = stationsWithDistance
+                        .sort((a, b) => a.distance - b.distance)
+                        .slice(0, 3);
+
+                    setNearestStations(nearest);
+                    setLoadingLocation(false);
+                },
+                (error) => {
+                    console.error('Error getting location:', error);
+                    setLoadingLocation(false);
+                    // Fallback to default location (Mumbai)
+                    setUserLocation({ lat: 19.0760, lng: 72.8777 });
+                }
+            );
+        } else {
+            console.error('Geolocation not supported');
+            setLoadingLocation(false);
+        }
+    }, []);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -158,32 +251,62 @@ const Dashboard = () => {
 
                     {/* Right Column - Alerts & Info */}
                     <div className="space-y-6">
-                        {/* Live Alerts */}
+                        {/* Nearest Stations */}
                         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border-2 border-white/50 p-6">
                             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                <AlertCircle className="w-5 h-5 text-red-500" />
-                                Live Alerts
+                                <MapPin className="w-5 h-5 text-blue-500" />
+                                Nearest Stations
                             </h2>
-                            <div className="space-y-3">
-                                <AlertCard
-                                    type="warning"
-                                    title="Moderate Delays"
-                                    description="Western Line experiencing 5-10 min delays"
-                                    time="10 mins ago"
-                                />
-                                <AlertCard
-                                    type="info"
-                                    title="Platform Change"
-                                    description="Train to Virar now at Platform 2"
-                                    time="25 mins ago"
-                                />
-                                <AlertCard
-                                    type="success"
-                                    title="Service Restored"
-                                    description="Central Line running normally"
-                                    time="1 hour ago"
-                                />
-                            </div>
+                            {loadingLocation ? (
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-navy"></div>
+                                </div>
+                            ) : nearestStations.length > 0 ? (
+                                <div className="space-y-3">
+                                    {nearestStations.map((station, index) => (
+                                        <div
+                                            key={station.id}
+                                            className="p-3 rounded-lg border-2 border-gray-100 hover:border-blue-200 hover:bg-blue-50/50 transition-all cursor-pointer group"
+                                        >
+                                            <div className="flex items-start gap-3">
+                                                <div className={`p-2 rounded-lg ${station.type === 'Metro' ? 'bg-purple-100' : 'bg-blue-100'}`}>
+                                                    {station.type === 'Metro' ? (
+                                                        <Train className="w-5 h-5 text-purple-600" />
+                                                    ) : (
+                                                        <Train className="w-5 h-5 text-blue-600" />
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <h4 className="font-semibold text-gray-900">{station.name}</h4>
+                                                        <span className="text-xs font-bold px-2 py-1 rounded-full bg-green-100 text-green-700">
+                                                            {station.distance < 1
+                                                                ? `${(station.distance * 1000).toFixed(0)}m`
+                                                                : `${station.distance.toFixed(1)}km`
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`text-xs px-2 py-0.5 rounded-full ${station.type === 'Metro'
+                                                            ? 'bg-purple-50 text-purple-600'
+                                                            : 'bg-blue-50 text-blue-600'
+                                                            }`}>
+                                                            {station.type}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">• {station.line}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-6">
+                                    <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                                    <p className="text-gray-500 text-sm">Unable to fetch nearest stations</p>
+                                    <p className="text-gray-400 text-xs mt-1">Please enable location access</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Republic Day Special */}

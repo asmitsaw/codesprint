@@ -12,6 +12,7 @@ import Ticketing from './pages/Ticketing';
 import DigitalTicket from './pages/DigitalTicket';
 import LiveStatus from './pages/LiveStatus';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
 
 function App() {
   return (
@@ -25,10 +26,12 @@ function App() {
       <Route path="/login" element={<SignInPage />} />
       <Route path="/signup" element={<SignUpPage />} />
 
+      {/* Admin Route - Protected with custom admin auth */}
+      <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
+
       {/* Protected Routes - Require Authentication */}
       <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/user-dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
-      <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
       <Route path="/scan" element={<ProtectedRoute><ScanPage /></ProtectedRoute>} />
       <Route path="/map" element={<ProtectedRoute><LiveMap /></ProtectedRoute>} />
       <Route path="/ticketing" element={<ProtectedRoute><Ticketing /></ProtectedRoute>} />

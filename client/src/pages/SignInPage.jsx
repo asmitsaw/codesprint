@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SignIn } from '@clerk/clerk-react';
 import { Train } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import AdminLoginModal from '../components/AdminLoginModal';
 
 const SignInPage = () => {
+    const [showAdminModal, setShowAdminModal] = useState(false);
     return (
         <div className="min-h-screen flex flex-col font-sans relative overflow-hidden">
             {/* Animated Background */}
@@ -18,7 +20,7 @@ const SignInPage = () => {
             <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-green via-white to-brand-saffron"></div>
 
             {/* Header */}
-            <header className="relative z-10 p-6">
+            <header className="relative z-10 p-6 flex justify-between items-center">
                 <Link to="/" className="flex items-center space-x-3 group w-fit">
                     <div className="relative w-10 h-10 flex items-center justify-center">
                         <div className="absolute inset-0 rounded-full border-2 border-brand-navy animate-spin-slow group-hover:border-brand-saffron transition-colors"></div>
@@ -33,6 +35,21 @@ const SignInPage = () => {
                         <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">Republic Day Edition</span>
                     </div>
                 </Link>
+
+                {/* Admin Panel Button */}
+                <button
+                    onClick={() => setShowAdminModal(true)}
+                    className="group relative px-6 py-3 bg-gradient-to-r from-brand-saffron via-brand-navy to-brand-green rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105"
+                >
+                    <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity"></div>
+                    <span className="relative text-white font-bold text-sm tracking-wider flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="3" x2="9" y2="21"></line>
+                        </svg>
+                        ADMIN PANEL
+                    </span>
+                </button>
             </header>
 
             {/* Main Content */}
@@ -107,6 +124,12 @@ const SignInPage = () => {
             <footer className="relative z-10 p-6 text-center text-sm text-gray-500">
                 <p>© 2026 Ministry of Railways & MMRDA • Digital India Initiative</p>
             </footer>
+
+            {/* Admin Login Modal */}
+            <AdminLoginModal
+                isOpen={showAdminModal}
+                onClose={() => setShowAdminModal(false)}
+            />
         </div>
     );
 };
