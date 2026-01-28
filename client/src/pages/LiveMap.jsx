@@ -24,6 +24,12 @@ import "leaflet/dist/leaflet.css";
 import Navbar from "../components/Navbar";
 import { westernLineStations } from "../utils/stations";
 import { calculateFare } from "../utils/fareCalculator";
+import {
+  railwayStations,
+  getAllStations,
+  getLineCoordinates,
+  lineColors,
+} from "../utils/allStations";
 
 // Fix Leaflet default marker icon issue
 delete L.Icon.Default.prototype._getIconUrl;
@@ -36,256 +42,54 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
-// Mumbai Railway Stations Data (Western Line - Complete Churchgate to Virar)
-const stations = [
-  {
-    id: 1,
-    name: "Churchgate",
-    lat: 18.9322,
-    lng: 72.8264,
-    platform: "Platform 4",
-    status: "On Time",
-  },
-  {
-    id: 2,
-    name: "Marine Lines",
-    lat: 18.9467,
-    lng: 72.8233,
-    platform: "Platform 2",
-    status: "On Time",
-  },
-  {
-    id: 3,
-    name: "Charni Road",
-    lat: 18.9534,
-    lng: 72.8196,
-    platform: "Platform 3",
-    status: "On Time",
-  },
-  {
-    id: 4,
-    name: "Grant Road",
-    lat: 18.9629,
-    lng: 72.8151,
-    platform: "Platform 1",
-    status: "2 min late",
-  },
-  {
-    id: 5,
-    name: "Mumbai Central",
-    lat: 18.9685,
-    lng: 72.8196,
-    platform: "Platform 5",
-    status: "On Time",
-  },
-  {
-    id: 6,
-    name: "Mahalaxmi",
-    lat: 18.9825,
-    lng: 72.8231,
-    platform: "Platform 2",
-    status: "On Time",
-  },
-  {
-    id: 7,
-    name: "Lower Parel",
-    lat: 18.9961,
-    lng: 72.8302,
-    platform: "Platform 3",
-    status: "On Time",
-  },
-  {
-    id: 8,
-    name: "Elphinstone Road",
-    lat: 19.0079,
-    lng: 72.8319,
-    platform: "Platform 1",
-    status: "On Time",
-  },
-  {
-    id: 9,
-    name: "Dadar",
-    lat: 19.0176,
-    lng: 72.8432,
-    platform: "Platform 6",
-    status: "On Time",
-  },
-  {
-    id: 10,
-    name: "Matunga Road",
-    lat: 19.0278,
-    lng: 72.8453,
-    platform: "Platform 2",
-    status: "On Time",
-  },
-  {
-    id: 11,
-    name: "Mahim",
-    lat: 19.0401,
-    lng: 72.8406,
-    platform: "Platform 4",
-    status: "On Time",
-  },
-  {
-    id: 12,
-    name: "Bandra",
-    lat: 19.0544,
-    lng: 72.8406,
-    platform: "Platform 3",
-    status: "On Time",
-  },
-  {
-    id: 13,
-    name: "Khar Road",
-    lat: 19.0706,
-    lng: 72.8377,
-    platform: "Platform 2",
-    status: "On Time",
-  },
-  {
-    id: 14,
-    name: "Santacruz",
-    lat: 19.0812,
-    lng: 72.841,
-    platform: "Platform 1",
-    status: "On Time",
-  },
-  {
-    id: 15,
-    name: "Vile Parle",
-    lat: 19.0974,
-    lng: 72.8442,
-    platform: "Platform 5",
-    status: "On Time",
-  },
-  {
-    id: 16,
-    name: "Andheri",
-    lat: 19.1197,
-    lng: 72.8464,
-    platform: "Platform 3",
-    status: "On Time",
-  },
-  {
-    id: 17,
-    name: "Jogeshwari",
-    lat: 19.1355,
-    lng: 72.8454,
-    platform: "Platform 2",
-    status: "On Time",
-  },
-  {
-    id: 18,
-    name: "Ram Mandir",
-    lat: 19.1486,
-    lng: 72.8416,
-    platform: "Platform 1",
-    status: "On Time",
-  },
-  {
-    id: 19,
-    name: "Goregaon",
-    lat: 19.1642,
-    lng: 72.8479,
-    platform: "Platform 4",
-    status: "On Time",
-  },
-  {
-    id: 20,
-    name: "Malad",
-    lat: 19.1869,
-    lng: 72.8483,
-    platform: "Platform 3",
-    status: "On Time",
-  },
-  {
-    id: 21,
-    name: "Kandivali",
-    lat: 19.2041,
-    lng: 72.85,
-    platform: "Platform 2",
-    status: "On Time",
-  },
-  {
-    id: 22,
-    name: "Borivali",
-    lat: 19.231,
-    lng: 72.8565,
-    platform: "Platform 5",
-    status: "On Time",
-  },
-  {
-    id: 23,
-    name: "Dahisar",
-    lat: 19.2561,
-    lng: 72.8627,
-    platform: "Platform 1",
-    status: "On Time",
-  },
-  {
-    id: 24,
-    name: "Mira Road",
-    lat: 19.2806,
-    lng: 72.8691,
-    platform: "Platform 3",
-    status: "On Time",
-  },
-  {
-    id: 25,
-    name: "Bhayandar",
-    lat: 19.3017,
-    lng: 72.8526,
-    platform: "Platform 2",
-    status: "On Time",
-  },
-  {
-    id: 26,
-    name: "Naigaon",
-    lat: 19.349,
-    lng: 72.8567,
-    platform: "Platform 1",
-    status: "On Time",
-  },
-  {
-    id: 27,
-    name: "Vasai Road",
-    lat: 19.3718,
-    lng: 72.8231,
-    platform: "Platform 4",
-    status: "On Time",
-  },
-  {
-    id: 28,
-    name: "Nallasopara",
-    lat: 19.4224,
-    lng: 72.8199,
-    platform: "Platform 2",
-    status: "On Time",
-  },
-  {
-    id: 29,
-    name: "Virar",
-    lat: 19.4559,
-    lng: 72.8111,
-    platform: "Platform 3",
-    status: "On Time",
-  },
-];
+// Mumbai Railway Stations Data (All Lines - Western, Central, Harbour)
+const stations = getAllStations().map((station) => ({
+  ...station,
+  platform: `Platform ${Math.floor(Math.random() * 5) + 1}`,
+  status: "On Time",
+}));
 
-// Create custom icons for stations
-const createStationIcon = (isHighlight) => {
+// Create custom icons for stations with line colors and name labels
+const createStationIcon = (
+  isHighlight,
+  color = "#2EC4B6",
+  stationName = "",
+) => {
   return L.divIcon({
     className: "custom-station-marker",
-    html: `<div style="
-            width: ${isHighlight ? "16px" : "12px"};
-            height: ${isHighlight ? "16px" : "12px"};
-            background-color: ${isHighlight ? "#5700d1" : "#2EC4B6"};
-            border: 3px solid white;
-            border-radius: 50%;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        "></div>`,
-    iconSize: [isHighlight ? 16 : 12, isHighlight ? 16 : 12],
-    iconAnchor: [isHighlight ? 8 : 6, isHighlight ? 8 : 6],
+    html: `
+      <div style="position: relative; display: flex; flex-direction: column; align-items: center;">
+        <div style="
+          width: ${isHighlight ? "14px" : "10px"};
+          height: ${isHighlight ? "14px" : "10px"};
+          background-color: ${isHighlight ? "#5700d1" : color};
+          border: ${isHighlight ? "3px" : "2px"} solid white;
+          border-radius: 50%;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        "></div>
+        ${
+          stationName
+            ? `
+          <div style="
+            position: absolute;
+            top: ${isHighlight ? "18px" : "14px"};
+            white-space: nowrap;
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            color: #1f2937;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            border: 1px solid ${color};
+          ">${stationName}</div>
+        `
+            : ""
+        }
+      </div>
+    `,
+    iconSize: [isHighlight ? 14 : 10, isHighlight ? 14 : 10],
+    iconAnchor: [isHighlight ? 7 : 5, isHighlight ? 7 : 5],
   });
 };
 
@@ -354,12 +158,27 @@ const createTrainIcon = () => {
 };
 
 // Map Controller to handle zoom
-const MapController = ({ onZoomIn, onZoomOut, onLocate }) => {
+const MapController = ({ onZoomIn, onZoomOut, onLocate, onZoomChange }) => {
   const map = useMap();
 
   useEffect(() => {
-    // This is just to get map instance
-  }, [map]);
+    // Track zoom changes
+    const handleZoom = () => {
+      if (onZoomChange) {
+        onZoomChange(map.getZoom());
+      }
+    };
+
+    map.on("zoomend", handleZoom);
+    // Set initial zoom
+    if (onZoomChange) {
+      onZoomChange(map.getZoom());
+    }
+
+    return () => {
+      map.off("zoomend", handleZoom);
+    };
+  }, [map, onZoomChange]);
 
   const handleZoomIn = () => {
     map.zoomIn();
@@ -406,6 +225,7 @@ const LiveMap = () => {
   const [routes, setRoutes] = useState([]);
   const [showRoutes, setShowRoutes] = useState(false);
   const [trains, setTrains] = useState([]);
+  const [zoomLevel, setZoomLevel] = useState(12);
   const [selectedStations, setSelectedStations] = useState({
     source: null,
     destination: null,
@@ -785,12 +605,36 @@ const LiveMap = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
-              {/* Polyline connecting all stations (Western Line Route) - Background */}
+              {/* Polylines for all railway and metro lines - Background */}
               <Polyline
-                positions={stations.map((s) => [s.lat, s.lng])}
-                color="#cbd5e1"
-                weight={3}
-                opacity={0.5}
+                positions={getLineCoordinates("western")}
+                color={lineColors.western}
+                weight={4}
+                opacity={0.7}
+              />
+              <Polyline
+                positions={getLineCoordinates("central")}
+                color={lineColors.central}
+                weight={4}
+                opacity={0.7}
+              />
+              <Polyline
+                positions={getLineCoordinates("harbour")}
+                color={lineColors.harbour}
+                weight={4}
+                opacity={0.7}
+              />
+              <Polyline
+                positions={getLineCoordinates("metro1")}
+                color={lineColors.metro1}
+                weight={4}
+                opacity={0.8}
+              />
+              <Polyline
+                positions={getLineCoordinates("metro3")}
+                color={lineColors.metro3}
+                weight={4}
+                opacity={0.8}
               />
 
               {/* Highlighted Route between selected stations */}
@@ -844,7 +688,11 @@ const LiveMap = () => {
                         ? createSourceIcon()
                         : isDestination
                           ? createDestinationIcon()
-                          : createStationIcon(isOnRoute)
+                          : createStationIcon(
+                              isOnRoute,
+                              station.color,
+                              zoomLevel >= 13 ? station.name : "",
+                            )
                     }
                   >
                     <Popup>
@@ -852,6 +700,17 @@ const LiveMap = () => {
                         <p className="font-bold text-gray-900">
                           {station.name}
                         </p>
+                        <p
+                          className="text-xs font-semibold"
+                          style={{ color: station.color }}
+                        >
+                          {station.line} Line
+                        </p>
+                        {station.distance !== undefined && (
+                          <p className="text-xs text-gray-600">
+                            Distance: {station.distance} km
+                          </p>
+                        )}
                         {isSource && (
                           <p className="text-xs text-green-600 font-bold">
                             📍 Source Station
@@ -900,8 +759,69 @@ const LiveMap = () => {
               ))}
 
               {/* Map Controls */}
-              <MapController />
+              <MapController onZoomChange={setZoomLevel} />
             </MapContainer>
+
+            {/* Railway Lines Legend */}
+            <div className="absolute top-6 left-6 z-[1000] bg-white p-4 rounded-xl shadow-lg border border-gray-200 max-h-[90vh] overflow-y-auto">
+              <h3 className="text-sm font-bold text-gray-900 mb-3">
+                Transit Lines
+              </h3>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-1 rounded"
+                    style={{ backgroundColor: lineColors.western }}
+                  ></div>
+                  <span className="text-xs font-medium text-gray-700">
+                    Western Line
+                  </span>
+                  <span className="text-xs text-gray-500">(29)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-1 rounded"
+                    style={{ backgroundColor: lineColors.central }}
+                  ></div>
+                  <span className="text-xs font-medium text-gray-700">
+                    Central Line
+                  </span>
+                  <span className="text-xs text-gray-500">(26)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-6 h-1 rounded"
+                    style={{ backgroundColor: lineColors.harbour }}
+                  ></div>
+                  <span className="text-xs font-medium text-gray-700">
+                    Harbour Line
+                  </span>
+                  <span className="text-xs text-gray-500">(24)</span>
+                </div>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-6 h-1 rounded"
+                      style={{ backgroundColor: lineColors.metro1 }}
+                    ></div>
+                    <span className="text-xs font-medium text-gray-700">
+                      Metro Line 1
+                    </span>
+                    <span className="text-xs text-gray-500">(12)</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div
+                      className="w-6 h-1 rounded"
+                      style={{ backgroundColor: lineColors.metro3 }}
+                    ></div>
+                    <span className="text-xs font-medium text-gray-700">
+                      Metro Line 3
+                    </span>
+                    <span className="text-xs text-gray-500">(27)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Map Floating Info Card (Route Summary on Map) */}
             {showRoutes && source && destination && (

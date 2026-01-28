@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -31,8 +31,12 @@ import {
   Radio,
   QrCode,
   Scan,
+  Ticket,
+  CheckCircle,
+  XCircle,
+  Loader,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AdminNavbar from "../components/AdminNavbar";
 
 // Sample Data
@@ -174,8 +178,49 @@ const stationHeatmapData = [
 ];
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [timeFilter, setTimeFilter] = useState("today");
   const [selectedRoute, setSelectedRoute] = useState("all");
+  const [tickets, setTickets] = useState([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [ticketFilter, setTicketFilter] = useState("all"); // all, active, expired
+
+  useEffect(() => {
+    fetchTickets();
+  }, []);
+
+  const fetchTickets = async () => {
+    setLoadingTickets(true);
+    try {
+      const response = await fetch("http://localhost:5000/api/tickets");
+      if (response.ok) {
+        const data = await response.json();
+        setTickets(data);
+      }
+    } catch (error) {
+      console.error("Error fetching tickets:", error);
+    } finally {
+      setLoadingTickets(false);
+    }
+  };
+
+  const isTicketValid = (validUpto) => {
+    return new Date(validUpto) > new Date();
+  };
+
+  const getFilteredTickets = () => {
+    if (ticketFilter === "active") {
+      return tickets.filter((t) => isTicketValid(t.valid_upto));
+    } else if (ticketFilter === "expired") {
+      return tickets.filter((t) => !isTicketValid(t.valid_upto));
+    }
+    return tickets;
+  };
+
+  const activeTicketsCount = tickets.filter((t) =>
+    isTicketValid(t.valid_upto),
+  ).length;
+  const totalRevenue = tickets.reduce((sum, t) => sum + (t.fare || 0), 0);
 
   const handleExportReport = () => {
     // Generate CSV data
@@ -276,12 +321,12 @@ ${crowdDistribution.map((c) => `${c.name},${c.value}%`).join("\n")}
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           <MetricCard
-            icon={<Users className="w-6 h-6" />}
-            label="Total Passengers Today"
-            value="3.2M"
-            change="+15.2%"
+            icon={<Ticket className="w-6 h-6" />}
+            label="Total Tickets Sold"
+            value={tickets.length.toString()}
+            change={`₹${totalRevenue.toLocaleString("en-IN")} Revenue`}
             trend="up"
-            gradient="from-blue-500 to-blue-700"
+            gradient="from-purple-500 to-purple-700"
           />
           <MetricCard
             icon={<Activity className="w-6 h-6" />}
@@ -497,6 +542,185 @@ ${crowdDistribution.map((c) => `${c.name},${c.value}%`).join("\n")}
               <PeakHourCard key={idx} data={period} />
             ))}
           </div>
+        </div>
+
+        {/* User Tickets Section */}
+        <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-xl border border-gray-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-brand-navy flex items-center gap-2">
+              <Ticket className="w-5 h-5 text-brand-saffron" />
+              User Tickets Management
+            </h2>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Total Revenue</p>
+                <p className="text-xl font-bold text-green-600">
+                  ₹{totalRevenue.toLocaleString("en-IN")}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setTicketFilter("all")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                    ticketFilter === "all"
+                      ? "bg-white text-brand-navy shadow-sm"
+                      : "text-gray-600"
+                  }`}
+                >
+                  All ({tickets.length})
+                </button>
+                <button
+                  onClick={() => setTicketFilter("active")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                    ticketFilter === "active"
+                      ? "bg-white text-green-600 shadow-sm"
+                      : "text-gray-600"
+                  }`}
+                >
+                  Active ({activeTicketsCount})
+                </button>
+                <button
+                  onClick={() => setTicketFilter("expired")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                    ticketFilter === "expired"
+                      ? "bg-white text-red-600 shadow-sm"
+                      : "text-gray-600"
+                  }`}
+                >
+                  Expired ({tickets.length - activeTicketsCount})
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {loadingTickets ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader className="w-8 h-8 animate-spin text-brand-navy" />
+            </div>
+          ) : getFilteredTickets().length === 0 ? (
+            <div className="text-center py-12">
+              <Ticket className="w-16 h-16 mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-600 font-medium">No tickets found</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b-2 border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Ticket ID
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Route
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Class
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Passengers
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Fare
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Issued
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {getFilteredTickets()
+                    .slice(0, 20)
+                    .map((ticket, idx) => {
+                      const isValid = isTicketValid(ticket.valid_upto);
+                      return (
+                        <tr
+                          key={idx}
+                          className="hover:bg-gray-50 transition-colors"
+                        >
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-xs text-gray-900">
+                              {ticket.ticket_id.substring(0, 16)}...
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-gray-900">
+                              {ticket.source} → {ticket.destination}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {ticket.ticket_type}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                              {ticket.class}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <span className="font-semibold text-gray-900">
+                              {ticket.passengers}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-bold text-green-600">
+                              ₹{ticket.fare}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-gray-900">
+                              {new Date(ticket.issued_at).toLocaleDateString(
+                                "en-IN",
+                              )}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {new Date(ticket.issued_at).toLocaleTimeString(
+                                "en-IN",
+                                { hour: "2-digit", minute: "2-digit" },
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            {isValid ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
+                                <CheckCircle className="w-3 h-3" />
+                                Valid
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
+                                <XCircle className="w-3 h-3" />
+                                Expired
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <button
+                              onClick={() =>
+                                navigate("/digital-ticket", { state: ticket })
+                              }
+                              className="text-brand-navy hover:text-brand-saffron font-semibold text-sm transition-colors"
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+              {getFilteredTickets().length > 20 && (
+                <div className="mt-4 text-center">
+                  <p className="text-sm text-gray-600">
+                    Showing 20 of {getFilteredTickets().length} tickets
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Station Heatmap */}

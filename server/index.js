@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-// const { createClient } = require('@supabase/supabase-js');
+const supabase = require("./db");
 
 dotenv.config();
 
@@ -16,6 +16,37 @@ let tickets = [];
 
 app.get("/", (req, res) => {
   res.send("Apli Mumbai Rail API is Running");
+});
+
+// Train Status Route - Fetch from Supabase 'status' table
+app.get("/api/train-status", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("status")
+      .select("*")
+      .order("Mahim_Arrival", { ascending: true });
+
+    if (error) {
+      console.error("Supabase error:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch train status from database" });
+    }
+
+    // Map database column names to match frontend expectations
+    const formattedData = data.map((train) => ({
+      train_id: train.Train_ID || train.train_id,
+      type: train.Type || train.type,
+      start_time: train.Start_Time || train.start_time,
+      mahim_arrival: train.Mahim_Arrival || train.mahim_arrival,
+      end_time: train.End_Time || train.end_time,
+    }));
+
+    res.json(formattedData);
+  } catch (err) {
+    console.error("Server error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // Ticket Routes

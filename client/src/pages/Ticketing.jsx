@@ -7,14 +7,99 @@ import {
   Wallet,
   Plus,
   Loader,
+  Zap,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { westernLineStations } from "../utils/stations";
 import { getWalletBalance, addMoney, deductMoney } from "../utils/wallet";
 import { calculateFare } from "../utils/fareCalculator";
 
+// Metro Lines and Stations Data
+const metroLines = {
+  "Blue Line (Line 1)": [
+    "Versova",
+    "D.N. Nagar",
+    "Azad Nagar",
+    "Andheri",
+    "Western Express Highway (WEH)",
+    "Chakala (J.B. Nagar)",
+    "Airport Road",
+    "Marol Naka",
+    "Saki Naka",
+    "Asalpha",
+    "Jagruti Nagar",
+    "Ghatkopar",
+  ],
+  "Yellow Line (Line 2A)": [
+    "Dahisar (East)",
+    "Anand Nagar",
+    "Kandarpada",
+    "Mandapeshwar (IC Colony)",
+    "Eksar",
+    "Borivali (West)",
+    "Pahadi Eksar",
+    "Kandivali (West)",
+    "Dahanukarwadi",
+    "Valnai (Meeth Chowky)",
+    "Malad (West)",
+    "Lower Malad",
+    "Pahadi Goregaon",
+    "Goregaon (West)",
+    "Oshiwara",
+    "Lower Oshiwara",
+    "Andheri (West)",
+  ],
+  "Red Line (Line 7)": [
+    "Dahisar (East)",
+    "Ovaripada",
+    "Rashtriya Udyan (National Park)",
+    "Devipada",
+    "Magathane",
+    "Poisar",
+    "Akurli",
+    "Kurar",
+    "Dindoshi",
+    "Aarey",
+    "Goregaon (East)",
+    "Jogeshwari (East)",
+    "Mogra",
+    "Gundavali",
+  ],
+  "Aqua Line (Line 3)": [
+    "Aarey JVLR",
+    "SEEPZ",
+    "MIDC Andheri",
+    "Marol Naka",
+    "CSMIA T2 (International Airport)",
+    "Sahar Road",
+    "CSMIA T1 (Domestic Airport)",
+    "Santacruz",
+    "Bandra Colony",
+    "BKC (Bandra Kurla Complex)",
+    "Dharavi",
+    "Shitaladevi Mandir",
+    "Dadar",
+    "Siddhivinayak",
+    "Worli",
+    "Acharya Atre Chowk",
+    "Science Centre",
+    "Mahalaxmi",
+    "Jagannath Shankar Sheth (Mumbai Central)",
+    "Grant Road",
+    "Girgaon",
+    "Kalbadevi",
+    "CSMT (Chhatrapati Shivaji Maharaj Terminus)",
+    "Hutatma Chowk",
+    "Churchgate",
+    "Vidhan Bhavan",
+    "Cuffe Parade",
+  ],
+};
+
 const Ticketing = () => {
   const navigate = useNavigate();
+  const [ticketMode, setTicketMode] = useState("rail"); // 'rail' or 'metro'
+  const [metroLine, setMetroLine] = useState(""); // Selected metro line
   const [formData, setFormData] = useState({
     source: "",
     destination: "",
@@ -33,6 +118,42 @@ const Ticketing = () => {
     setWalletBalance(getWalletBalance());
   }, []);
 
+  // Calculate metro fare based on station distance
+  const calculateMetroFare = (
+    source,
+    destination,
+    line,
+    passengers,
+    ticketType,
+  ) => {
+    if (!source || !destination || source === destination) return 0;
+
+    const stations = metroLines[line];
+    const sourceIndex = stations.indexOf(source);
+    const destIndex = stations.indexOf(destination);
+
+    if (sourceIndex === -1 || destIndex === -1) return 0;
+
+    const distance = Math.abs(destIndex - sourceIndex);
+    let baseFare = 0;
+
+    if (distance <= 2) {
+      baseFare = 10;
+    } else if (distance <= 5) {
+      baseFare = 20;
+    } else {
+      baseFare = 30;
+    }
+
+    // Apply return journey multiplier
+    if (ticketType === "Return Journey") {
+      baseFare = baseFare * 2;
+    }
+
+    // Multiply by number of passengers
+    return baseFare * passengers;
+  };
+
   useEffect(() => {
     if (
       formData.source &&
@@ -40,21 +161,32 @@ const Ticketing = () => {
       formData.source !== formData.destination
     ) {
       try {
-        const calculatedFare = calculateFare(
-          formData.source,
-          formData.destination,
-          formData.class,
-          formData.ticketType,
-          formData.passengers,
-        );
-        setFare(calculatedFare);
+        if (ticketMode === "metro" && metroLine) {
+          const calculatedFare = calculateMetroFare(
+            formData.source,
+            formData.destination,
+            metroLine,
+            formData.passengers,
+            formData.ticketType,
+          );
+          setFare(calculatedFare);
+        } else if (ticketMode === "rail") {
+          const calculatedFare = calculateFare(
+            formData.source,
+            formData.destination,
+            formData.class,
+            formData.ticketType,
+            formData.passengers,
+          );
+          setFare(calculatedFare);
+        }
       } catch (error) {
         setFare(0);
       }
     } else {
       setFare(0);
     }
-  }, [formData]);
+  }, [formData, ticketMode, metroLine]);
 
   const handleAddMoney = () => {
     const amount = parseFloat(addMoneyAmount);
@@ -157,17 +289,53 @@ const Ticketing = () => {
 
         <div className="max-w-4xl w-full grid md:grid-cols-2 gap-8 items-center z-10">
           <div className="text-left space-y-6">
+            {/* Mode Toggle - Moved to top */}
+            <div className="flex items-center gap-3 p-2 bg-white/80 backdrop-blur-md rounded-2xl shadow-lg border border-gray-200">
+              <button
+                onClick={() => setTicketMode("rail")}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                  ticketMode === "rail"
+                    ? "bg-gradient-to-r from-brand-navy to-blue-700 text-white shadow-lg"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                <Train className="w-5 h-5" />
+                Local Train
+              </button>
+              <button
+                onClick={() => setTicketMode("metro")}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold text-sm transition-all ${
+                  ticketMode === "metro"
+                    ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-lg"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                <Zap className="w-5 h-5" />
+                Metro
+              </button>
+            </div>
+
             <div className="inline-flex items-center px-4 py-1.5 rounded-full bg-brand-navy/10 border border-brand-navy/20 text-brand-navy text-xs font-bold uppercase tracking-wider">
               <span className="w-2 h-2 bg-brand-saffron rounded-full mr-2 animate-pulse"></span>
               Smart & Paperless
             </div>
             <h1 className="text-5xl font-extrabold text-brand-navy leading-tight">
               Book Your <br />
-              <span className="text-brand-saffron">Journey</span> Today
+              <span
+                className={
+                  ticketMode === "rail"
+                    ? "text-brand-saffron"
+                    : "text-purple-600"
+                }
+              >
+                {ticketMode === "rail" ? "Journey" : "Metro Ride"}
+              </span>{" "}
+              Today
             </h1>
             <p className="text-lg text-gray-700 font-medium">
-              Skip the queues. Get your digital QR ticket instantly and travel
-              stress-free across Mumbai.
+              {ticketMode === "rail"
+                ? "Skip the queues. Get your digital QR ticket instantly and travel stress-free across Mumbai."
+                : "Experience Mumbai Metro with contactless digital tickets. Fast, convenient, and eco-friendly."}
             </p>
 
             {/* Wallet Card */}
@@ -213,151 +381,319 @@ const Ticketing = () => {
           </div>
 
           <div className="glass-card p-8 rounded-3xl shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-saffron via-white to-brand-green"></div>
+            <div
+              className={`absolute top-0 left-0 w-full h-2 ${
+                ticketMode === "rail"
+                  ? "bg-gradient-to-r from-brand-saffron via-white to-brand-green"
+                  : "bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600"
+              }`}
+            ></div>
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-              <Train className="w-6 h-6 mr-2 text-brand-navy" />
-              Book Ticket
+              {ticketMode === "rail" ? (
+                <>
+                  <Train className="w-6 h-6 mr-2 text-brand-navy" />
+                  Book Train Ticket
+                </>
+              ) : (
+                <>
+                  <Zap className="w-6 h-6 mr-2 text-purple-600" />
+                  Book Metro Ticket
+                </>
+              )}
             </h2>
 
-            <form onSubmit={handleBooking} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
+            {ticketMode === "metro" ? (
+              // Metro Ticket Booking Form
+              <form onSubmit={handleBooking} className="space-y-5">
+                {/* Metro Line Selection */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                    From
+                    Select Metro Line
                   </label>
                   <select
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/20 outline-none font-semibold text-gray-800"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 outline-none font-semibold text-gray-800"
                     required
-                    value={formData.source}
-                    onChange={(e) =>
-                      setFormData({ ...formData, source: e.target.value })
-                    }
+                    value={metroLine}
+                    onChange={(e) => {
+                      setMetroLine(e.target.value);
+                      setFormData({ ...formData, source: "", destination: "" });
+                    }}
                   >
-                    <option value="">Select Source</option>
-                    {westernLineStations.map((station) => (
-                      <option key={station} value={station}>
-                        {station}
+                    <option value="">Choose Metro Line</option>
+                    {Object.keys(metroLines).map((line) => (
+                      <option key={line} value={line}>
+                        {line}
                       </option>
                     ))}
                   </select>
                 </div>
+
+                {/* Source and Destination - Only show if line is selected */}
+                {metroLine && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                        From
+                      </label>
+                      <select
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 outline-none font-semibold text-gray-800"
+                        required
+                        value={formData.source}
+                        onChange={(e) =>
+                          setFormData({ ...formData, source: e.target.value })
+                        }
+                      >
+                        <option value="">Select Source</option>
+                        {metroLines[metroLine].map((station) => (
+                          <option key={station} value={station}>
+                            {station}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                        To
+                      </label>
+                      <select
+                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 outline-none font-semibold text-gray-800"
+                        required
+                        value={formData.destination}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            destination: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">Select Destination</option>
+                        {metroLines[metroLine].map((station) => (
+                          <option key={station} value={station}>
+                            {station}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                    To
+                    Passengers
                   </label>
-                  <select
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/20 outline-none font-semibold text-gray-800"
-                    required
-                    value={formData.destination}
+                  <input
+                    type="number"
+                    min="1"
+                    max="6"
+                    value={formData.passengers}
                     onChange={(e) =>
-                      setFormData({ ...formData, destination: e.target.value })
+                      setFormData({
+                        ...formData,
+                        passengers: parseInt(e.target.value) || 1,
+                      })
                     }
-                  >
-                    <option value="">Select Destination</option>
-                    {westernLineStations.map((station) => (
-                      <option key={station} value={station}>
-                        {station}
-                      </option>
-                    ))}
-                  </select>
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20 outline-none font-semibold text-gray-800"
+                  />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                  Passengers
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="6"
-                  value={formData.passengers}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      passengers: parseInt(e.target.value) || 1,
-                    })
-                  }
-                  className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/20 outline-none font-semibold text-gray-800"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                    Ticket Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {["Single Journey", "Return Journey"].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        className={`py-3 rounded-xl border font-bold text-sm transition-all ${formData.ticketType === type ? "bg-purple-600 text-white border-purple-600 shadow-lg" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
+                        onClick={() =>
+                          setFormData({ ...formData, ticketType: type })
+                        }
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                  Class
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {["Second", "First", "AC"].map((cls) => (
-                    <button
-                      key={cls}
-                      type="button"
-                      className={`py-3 rounded-xl border font-bold text-sm transition-all ${formData.class.includes(cls) ? "bg-brand-navy text-white border-brand-navy shadow-lg" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
-                      onClick={() =>
+                {/* Fare Display */}
+                {fare > 0 && (
+                  <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-xl">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-gray-700">
+                        Total Fare:
+                      </span>
+                      <span className="text-2xl font-black text-purple-700">
+                        ₹{fare}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isProcessing || fare === 0}
+                  className="w-full py-4 mt-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader className="w-5 h-5 mr-3 animate-spin" />
+                      <span className="text-lg">Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5 mr-3" />
+                      <span className="text-lg">Pay ₹{fare} & Book</span>
+                      <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              // Rail Ticket Booking Form
+              <form onSubmit={handleBooking} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                      From
+                    </label>
+                    <select
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/20 outline-none font-semibold text-gray-800"
+                      required
+                      value={formData.source}
+                      onChange={(e) =>
+                        setFormData({ ...formData, source: e.target.value })
+                      }
+                    >
+                      <option value="">Select Source</option>
+                      {westernLineStations.map((station) => (
+                        <option key={station} value={station}>
+                          {station}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                      To
+                    </label>
+                    <select
+                      className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/20 outline-none font-semibold text-gray-800"
+                      required
+                      value={formData.destination}
+                      onChange={(e) =>
                         setFormData({
                           ...formData,
-                          class: cls + (cls === "AC" ? " Local" : " Class"),
+                          destination: e.target.value,
                         })
                       }
                     >
-                      {cls}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
-                  Ticket Type
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {["Single Journey", "Return Journey"].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      className={`py-3 rounded-xl border font-bold text-sm transition-all ${formData.ticketType === type ? "bg-brand-saffron text-white border-brand-saffron shadow-lg" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
-                      onClick={() =>
-                        setFormData({ ...formData, ticketType: type })
-                      }
-                    >
-                      {type}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Fare Display */}
-              {fare > 0 && (
-                <div className="p-4 bg-green-50 border-2 border-green-200 rounded-xl">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-bold text-gray-700">
-                      Total Fare:
-                    </span>
-                    <span className="text-2xl font-black text-green-700">
-                      ₹{fare}
-                    </span>
+                      <option value="">Select Destination</option>
+                      {westernLineStations.map((station) => (
+                        <option key={station} value={station}>
+                          {station}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={isProcessing || fare === 0}
-                className="w-full py-4 mt-4 bg-gradient-to-r from-brand-navy to-blue-700 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? (
-                  <>
-                    <Loader className="w-5 h-5 mr-3 animate-spin" />
-                    <span className="text-lg">Processing...</span>
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-5 h-5 mr-3" />
-                    <span className="text-lg">Pay ₹{fare} & Book</span>
-                    <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-                  </>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                    Passengers
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="6"
+                    value={formData.passengers}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        passengers: parseInt(e.target.value) || 1,
+                      })
+                    }
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 focus:border-brand-navy focus:ring-2 focus:ring-brand-navy/20 outline-none font-semibold text-gray-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                    Class
+                  </label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {["Second", "First", "AC"].map((cls) => (
+                      <button
+                        key={cls}
+                        type="button"
+                        className={`py-3 rounded-xl border font-bold text-sm transition-all ${formData.class.includes(cls) ? "bg-brand-navy text-white border-brand-navy shadow-lg" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            class: cls + (cls === "AC" ? " Local" : " Class"),
+                          })
+                        }
+                      >
+                        {cls}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-2">
+                    Ticket Type
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {["Single Journey", "Return Journey"].map((type) => (
+                      <button
+                        key={type}
+                        type="button"
+                        className={`py-3 rounded-xl border font-bold text-sm transition-all ${formData.ticketType === type ? "bg-brand-saffron text-white border-brand-saffron shadow-lg" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}
+                        onClick={() =>
+                          setFormData({ ...formData, ticketType: type })
+                        }
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fare Display */}
+                {fare > 0 && (
+                  <div className="p-4 bg-green-50 border-2 border-green-200 rounded-xl">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-bold text-gray-700">
+                        Total Fare:
+                      </span>
+                      <span className="text-2xl font-black text-green-700">
+                        ₹{fare}
+                      </span>
+                    </div>
+                  </div>
                 )}
-              </button>
-            </form>
+
+                <button
+                  type="submit"
+                  disabled={isProcessing || fare === 0}
+                  className="w-full py-4 mt-4 bg-gradient-to-r from-brand-navy to-blue-700 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all flex items-center justify-center group disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader className="w-5 h-5 mr-3 animate-spin" />
+                      <span className="text-lg">Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5 mr-3" />
+                      <span className="text-lg">Pay ₹{fare} & Book</span>
+                      <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
           </div>
         </div>
 

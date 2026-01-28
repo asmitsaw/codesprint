@@ -2,403 +2,81 @@ import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import { Search, Train, MapPin, AlertTriangle, RefreshCw } from "lucide-react";
 
-// Hardcoded Schedule for Mahim Station
-const mahimSchedule = [
-  {
-    id: "W001",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Low",
-    arrivalTime: "04:28",
-  },
-  {
-    id: "W001",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "Low",
-    arrivalTime: "06:58",
-  },
-  {
-    id: "W002",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Low",
-    arrivalTime: "04:38",
-  },
-  {
-    id: "W002",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "Low",
-    arrivalTime: "07:11",
-  },
-  {
-    id: "W004",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Low",
-    arrivalTime: "05:01",
-  },
-  {
-    id: "W004",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "Low",
-    arrivalTime: "07:32",
-  },
-  {
-    id: "W006",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "Low",
-    arrivalTime: "05:25",
-  },
-  {
-    id: "W006",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 4,
-    crowd: "High",
-    arrivalTime: "07:58",
-  },
-  {
-    id: "W007",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Low",
-    arrivalTime: "05:36",
-  },
-  {
-    id: "W007",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "08:12",
-  },
-  {
-    id: "W010",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "Low",
-    arrivalTime: "06:08",
-  },
-  {
-    id: "W010",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "08:39",
-  },
-  {
-    id: "W011",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Low",
-    arrivalTime: "06:17",
-  },
-  {
-    id: "W011",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 4,
-    crowd: "High",
-    arrivalTime: "08:47",
-  },
-  {
-    id: "W014",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Medium",
-    arrivalTime: "06:41",
-  },
-  {
-    id: "W014",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "09:13",
-  },
-  {
-    id: "W015",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "Medium",
-    arrivalTime: "06:49",
-  },
-  {
-    id: "W015",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "09:22",
-  },
-  {
-    id: "W017",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Medium",
-    arrivalTime: "07:04",
-  },
-  {
-    id: "W017",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 4,
-    crowd: "High",
-    arrivalTime: "09:34",
-  },
-  {
-    id: "W020",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "High",
-    arrivalTime: "07:24",
-  },
-  {
-    id: "W020",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "09:54",
-  },
-  {
-    id: "W021",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "High",
-    arrivalTime: "07:28",
-  },
-  {
-    id: "W021",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "10:01",
-  },
-  {
-    id: "W024",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "High",
-    arrivalTime: "07:37",
-  },
-  {
-    id: "W024",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 4,
-    crowd: "High",
-    arrivalTime: "10:09",
-  },
-  {
-    id: "W026",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "High",
-    arrivalTime: "07:43",
-  },
-  {
-    id: "W026",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "10:15",
-  },
-  {
-    id: "W028",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "High",
-    arrivalTime: "07:48",
-  },
-  {
-    id: "W028",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "10:20",
-  },
-  {
-    id: "W030",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "High",
-    arrivalTime: "07:54",
-  },
-  {
-    id: "W030",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 4,
-    crowd: "High",
-    arrivalTime: "10:25",
-  },
-  {
-    id: "W205",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "High",
-    arrivalTime: "18:25",
-  },
-  {
-    id: "W206",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "High",
-    arrivalTime: "21:00",
-  },
-  {
-    id: "W207",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Medium",
-    arrivalTime: "18:45",
-  },
-  {
-    id: "W208",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 4,
-    crowd: "Medium",
-    arrivalTime: "21:15",
-  },
-  {
-    id: "W209",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "Medium",
-    arrivalTime: "19:10",
-  },
-  {
-    id: "W210",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "Low",
-    arrivalTime: "21:45",
-  },
-  {
-    id: "W211",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Low",
-    arrivalTime: "19:35",
-  },
-  {
-    id: "W212",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 4,
-    crowd: "Low",
-    arrivalTime: "22:10",
-  },
-  {
-    id: "W213",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "Low",
-    arrivalTime: "20:05",
-  },
-  {
-    id: "W214",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "Low",
-    arrivalTime: "22:35",
-  },
-  {
-    id: "W215",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 1,
-    crowd: "Low",
-    arrivalTime: "20:40",
-  },
-  {
-    id: "W216",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 4,
-    crowd: "Low",
-    arrivalTime: "23:05",
-  },
-  {
-    id: "W217",
-    name: "Churchgate - Virar Slow Local",
-    type: "Slow",
-    platform: 3,
-    crowd: "Low",
-    arrivalTime: "21:15",
-  },
-  {
-    id: "W218",
-    name: "Virar - Churchgate Slow Local",
-    type: "Slow",
-    platform: 2,
-    crowd: "Low",
-    arrivalTime: "23:40",
-  },
-];
+// Helper function to randomize crowd level
+const getRandomCrowd = () => {
+  const crowds = ["Low", "Medium", "High"];
+  return crowds[Math.floor(Math.random() * crowds.length)];
+};
+
+// Helper function to randomize train status
+const getRandomStatus = () => {
+  const statuses = [
+    { label: "On Time", color: "text-green-600" },
+    { label: "Delayed", color: "text-red-600" },
+    { label: "Running", color: "text-blue-600" },
+  ];
+  // 70% chance On Time, 20% Delayed, 10% Running
+  const rand = Math.random();
+  if (rand < 0.7) return statuses[0];
+  if (rand < 0.9) return statuses[1];
+  return statuses[2];
+};
+
+// Helper function to get random platform
+const getRandomPlatform = () => {
+  return Math.floor(Math.random() * 4) + 1; // Platform 1-4
+};
 
 const LiveStatus = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [trains, setTrains] = useState([]);
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  // Hardcoded time: January 26, 2026 at 4:58 PM (16:58)
+  const hardcodedTime = new Date(2026, 0, 26, 16, 58, 0);
+  const [currentTime, setCurrentTime] = useState(hardcodedTime);
 
   useEffect(() => {
-    updateTrains();
-    // Update every 10 seconds for real-time accuracy
+    fetchTrainStatus();
+    // Update every 30 seconds to simulate live updates
     const interval = setInterval(() => {
-      setCurrentTime(new Date());
-      updateTrains();
-    }, 10000);
+      fetchTrainStatus();
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
-  const updateTrains = () => {
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const fetchTrainStatus = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:5000/api/train-status");
+      if (!response.ok) {
+        throw new Error("Failed to fetch train status");
+      }
+      const data = await response.json();
+      processTrains(data);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching train status:", err);
+      setError("Failed to load train data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    // Filter and enhance trains with ETA
-    const upcomingTrains = mahimSchedule
+  const processTrains = (data) => {
+    // Use hardcoded time: 4:58 PM (16:58)
+    const currentMinutes = 16 * 60 + 58; // 16:58 = 1018 minutes from midnight
+
+    // Process trains from database
+    const upcomingTrains = data
       .map((train) => {
-        const [hours, minutes] = train.arrivalTime.split(":").map(Number);
+        // Parse Mahim Arrival time (format: HH:MM)
+        const arrivalTime = train.mahim_arrival || train.mahimArrival || "";
+        if (!arrivalTime) return null;
+
+        const [hours, minutes] = arrivalTime.split(":").map(Number);
         const trainMinutes = hours * 60 + minutes;
-        const diffMinutes = trainMinutes - currentMinutes;
+        let diffMinutes = trainMinutes - currentMinutes;
 
         // Calculate ETA
         let eta;
@@ -406,24 +84,42 @@ const LiveStatus = () => {
           // Train already passed today, show tomorrow's time
           const tomorrowDiff = diffMinutes + 24 * 60;
           if (tomorrowDiff > 0) {
+            const hrs = Math.floor(tomorrowDiff / 60);
+            const mins = tomorrowDiff % 60;
             eta =
-              tomorrowDiff < 60
-                ? `${tomorrowDiff} min`
-                : `${Math.floor(tomorrowDiff / 60)}h ${tomorrowDiff % 60}m`;
+              tomorrowDiff < 60 ? `${tomorrowDiff} min` : `${hrs}h ${mins}m`;
+            diffMinutes = tomorrowDiff;
           } else {
             return null; // Skip this train
           }
         } else {
-          eta =
-            diffMinutes < 60
-              ? `${diffMinutes} min`
-              : `${Math.floor(diffMinutes / 60)}h ${diffMinutes % 60}m`;
+          // Train is coming today
+          const hrs = Math.floor(diffMinutes / 60);
+          const mins = diffMinutes % 60;
+          eta = diffMinutes < 60 ? `${diffMinutes} min` : `${hrs}h ${mins}m`;
         }
 
+        // Create train route name from start and end times
+        const startTime = train.start_time || train.startTime || "";
+        const endTime = train.end_time || train.endTime || "";
+        const trainType = train.type || "Local";
+        const trainId = train.train_id || train.trainId || "UNKNOWN";
+
+        // Generate route name (e.g., "Churchgate - Virar Slow Local")
+        const routeName = `${trainType} Train`;
+
         return {
-          ...train,
+          id: trainId,
+          name: routeName,
+          type: trainType,
+          platform: getRandomPlatform(),
+          crowd: getRandomCrowd(),
+          status: getRandomStatus(),
+          arrivalTime: arrivalTime,
+          startTime: startTime,
+          endTime: endTime,
           eta,
-          diffMinutes: diffMinutes < 0 ? diffMinutes + 24 * 60 : diffMinutes,
+          diffMinutes,
         };
       })
       .filter((train) => train !== null)
@@ -476,10 +172,13 @@ const LiveStatus = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               <button
-                onClick={updateTrains}
+                onClick={fetchTrainStatus}
                 className="bg-brand-navy text-white px-8 py-3 rounded-xl font-bold hover:bg-brand-saffron transition-colors flex items-center gap-2"
+                disabled={loading}
               >
-                <RefreshCw className="w-4 h-4" />
+                <RefreshCw
+                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                />
                 Refresh
               </button>
             </div>
@@ -488,7 +187,25 @@ const LiveStatus = () => {
 
         {/* Status List */}
         <div className="grid gap-6">
-          {filteredTrains.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-brand-navy mx-auto mb-4"></div>
+              <p className="text-gray-600 font-medium">
+                Loading train status...
+              </p>
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <AlertTriangle className="w-16 h-16 mx-auto text-red-400 mb-4" />
+              <p className="text-gray-600 font-medium">{error}</p>
+              <button
+                onClick={fetchTrainStatus}
+                className="mt-4 px-6 py-2 bg-brand-navy text-white rounded-lg font-semibold hover:bg-brand-saffron transition-colors"
+              >
+                Retry
+              </button>
+            </div>
+          ) : filteredTrains.length === 0 ? (
             <div className="text-center py-12">
               <Train className="w-16 h-16 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-600 font-medium">
@@ -539,8 +256,10 @@ const LiveStatus = () => {
                       <p className="text-xs text-gray-400 uppercase font-bold mb-1">
                         Status
                       </p>
-                      <div className="flex items-center font-bold text-green-600">
-                        On Time
+                      <div
+                        className={`flex items-center font-bold ${train.status.color}`}
+                      >
+                        {train.status.label}
                       </div>
                     </div>
 

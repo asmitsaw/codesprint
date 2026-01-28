@@ -20,7 +20,7 @@ const LandingPage = () => {
     "/images/trains.jpg",
     "/images/new-ac-local-trains-for-mumbai.jpg",
     "/images/mumbai-local-110521667-16x9_0.jpg",
-    
+
     "/images/download.jpg",
   ];
 
@@ -65,7 +65,6 @@ const LandingPage = () => {
                   <span className="text-brand-navy mx-1">-</span>
                   <span className="text-brand-green">MUMBAI</span>
                 </span>
-               
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-8">
