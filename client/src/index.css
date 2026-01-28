@@ -41,6 +41,7 @@
   }
 
   @keyframes pulse-grow {
+
     0%,
     100% {
       transform: scale(1);
@@ -53,19 +54,41 @@
     }
   }
 
+  @keyframes bounce-slow {
+
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
   --animate-fadeIn: fadeIn 0.3s ease-out;
   --animate-pulse-grow: pulse-grow 1.5s ease-in-out infinite;
+  --animate-bounce-slow: bounce-slow 3s ease-in-out infinite;
+  --animate-spin-slow: spin-slow 10s linear infinite;
 }
 
 @layer base {
   body {
-    background: linear-gradient(
-      180deg,
-      #ff9933 0%,
-      #ffffff 45%,
-      #ffffff 55%,
-      #138808 100%
-    );
+    background: linear-gradient(180deg,
+        #ff9933 0%,
+        #ffffff 45%,
+        #ffffff 55%,
+        #138808 100%);
     background-attachment: fixed;
     min-height: 100vh;
     color: #1f2937;
@@ -95,11 +118,19 @@
 
   /* Soft gradient for dashboard areas */
   .bg-tiranga-soft {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 153, 51, 0.1) 0%,
-      rgba(255, 255, 255, 0.8) 50%,
-      rgba(19, 136, 8, 0.1) 100%
-    );
+    background: linear-gradient(135deg,
+        rgba(255, 153, 51, 0.1) 0%,
+        rgba(255, 255, 255, 0.8) 50%,
+        rgba(19, 136, 8, 0.1) 100%);
+  }
+
+  /* Premium radial gradients */
+  .bg-gradient-radial {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  /* Border gradients */
+  .border-3 {
+    border-width: 3px;
   }
 }
